@@ -24,7 +24,7 @@ compiled by typing:
 
 A typical command to run a simulation looks like this:
 
-    mpirun -np 16 ./gevolution -n 4 -m 4 -s settings.ini
+    mpirun -np 16 ./KGB-evolution -n 4 -m 4 -s settings.ini
 
 For further about gevolution information, please refer to the User Manual (manual.pdf)
 
