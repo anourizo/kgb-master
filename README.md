@@ -1,8 +1,8 @@
-# k-evolution
+# KGB-evolution
 
-k-evolution (arXiv:1910.01104) is based on gevolution N-body code (Adamek J., Daverio D., Durrer R., and Kunz M., Nature Phys. 12, 346 (2016), arXiv: 1604.06065).
+KGB-evolution (arXiv:1910.01104) is based on gevolution N-body code (Adamek J., Daverio D., Durrer R., and Kunz M., Nature Phys. 12, 346 (2016), arXiv: 1604.06065).
 
-k-essene based the EFT framework is added into the gevolution
+Kinetic Gravity Brading based the EFT framework is added into the gevolution
 The free parameters to be chosen are w (the equation of state for dark energy) and c_s^2 (the speed of sound squared). 
 
 
@@ -39,7 +39,4 @@ julian.adamek@qmul.ac.uk (for queries related to gevolution)
 developers@latfield.org (for queries related to the LATfield2 library)
 
 # kgb-master
-# kgb-master
-# kgb-master
-# kgb-master
-# kgb-master
+
