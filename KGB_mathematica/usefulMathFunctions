@@ -1,0 +1,404 @@
+(*Define the expression list*)cleanExpr1 = {-1/2, 
+  pertphi[LI[5]], -6*hubbleC[]^2*pertpsi[LI[1]]^2, 
+  primepertpsi[LI[1]], pprimepertpsi[LI[3]]^2, 
+  5*primepertpsi[LI[1]]^2, 1, primepertphi[LI[2]], 2, 4/3, 
+  3*pertpsi[LI[4]], -1/
+    2*(pertphi[LI[2]]*pertpsi[LI[3]]*pertpsi[LI[2]]^3*
+     pertchi[LI[4]]^3)}
+
+(*Function to get both explicit and implicit powers*)
+getPertPowers = 
+  Function[expr, 
+   Module[{explicit, implicit, 
+     terms},(*Flatten the expression to get all subterms*)
+    terms = If[Head[expr] === Times || Head[expr] === Plus, 
+      List @@ expr, {expr}];
+    (*Extract explicit powers*)
+    explicit = 
+     Cases[terms, 
+      Power[head_[LI[_]], pow_] /; 
+        StringMatchQ[ToString[head], "pert" ~~ __] :> {head, pow}];
+    (*Extract heads with explicit powers to avoid counting them as \
+implicit*)
+    implicit = 
+     Cases[terms, 
+      head_[LI[_]] /; (StringMatchQ[ToString[head], "pert" ~~ __] && 
+          FreeQ[terms, Power[head, _]]) :> {head, 1}];
+    (*Combine results,ensuring we only take the power part*)
+    Join[explicit[[All, 2]], implicit[[All, 2]]]]];
+
+(*Apply the function to the cleanExpr*)
+nspertpow = getPertPowers /@ cleanExpr1;
+
+(*Replace empty lists with 0 for terms without "pert" as the head*)
+nspertpow = nspertpow /. {} -> {0};
+
+(*Display the results*)
+nspertpow
+nspertpow = ReplaceRepeated[#, List -> Plus] & /@ nspertpow
+
+
+
+
+
+***** DIFFERENT FUNCTION OF NORDER*********************************************************************************
+NOrderFa[n_][expr_] := 
+ Module[{tmp, orderTder, orderSder, orderpert, nspert, ntpert, 
+   nspertpow, ntpertpow, order}, tmp = expr // Expand;
+  tmp = Replace[tmp, Plus -> List, {1}, Heads -> True];
+  If[ToString[Head[tmp]] != "List", tmp = {tmp}];
+  orderTder = -Length[IndicesOf[PD, TangentM1][#]]/2 & /@ tmp;
+  orderSder = -Length[IndicesOf[PD, TangentM3][#]]/2 & /@ tmp;
+  nspert = Count[#, _[LI[_]], Infinity] & /@ tmp;
+  ntpert = Count[#, _[LI[_], _, _], Infinity] & /@ tmp;
+  nspertpow = 
+   Cases[#, Power[_[LI[_]], pow_] :> pow, Infinity] & /@ tmp //. 
+    List[] :> List[1];
+  ntpertpow = 
+   Cases[#, Power[_[LI[_], _, _], pow_] :> pow, Infinity] & /@ 
+     tmp //. List[] :> List[1];
+  nspertpow = ReplaceRepeated[#, List -> Times] & /@ nspertpow;
+  ntpertpow = ReplaceRepeated[#, List -> Times] & /@ ntpertpow;
+  orderpert = nspert*nspertpow + ntpert*ntpertpow/2;
+  order = Boole[# == n] & /@ (orderTder + orderSder + orderpert);
+  tmp = tmp*order //. List -> Plus;
+  tmp]
+
+
+NOrderEm[n_][expr_] := 
+ Module[{tmp, orderTder, orderSder, orderpert, nspert, nvpert, ntpert,
+    nspertpow, nvpertpow, ntpertpow, order},
+  tmp = expr // Expand;
+  tmp = Replace[tmp, Plus -> List, {1}, Heads -> True];
+  If[ToString[Head[tmp]] != "List", tmp = {tmp}];
+  orderTder = -Length[IndicesOf[PD, TangentM1][#]]/2 & /@ tmp;
+  orderSder = -Length[IndicesOf[PD, TangentM3][#]]/2 & /@ tmp;
+  nspert = Count[#, _[LI[_]], Infinity] & /@ tmp;
+  nvpert = Count[#, _[LI[_], _], Infinity] & /@ tmp;
+  ntpert = Count[#, _[LI[_], _, _], Infinity] & /@ tmp;
+  nspertpow = 
+   Cases[#, Power[_[LI[_]], pow_] :> pow, Infinity] & /@ tmp //. 
+    List[] :> List[1];
+  nvpertpow = 
+   Cases[#, Power[_[LI[_], _], pow_] :> pow, Infinity] & /@ tmp //. 
+    List[] :> List[1];
+  ntpertpow = 
+   Cases[#, Power[_[LI[_], _, _], pow_] :> pow, Infinity] & /@ 
+     tmp //. List[] :> List[1];
+  nspertpow = ReplaceRepeated[#, List -> Times] & /@ nspertpow;
+  nvpertpow = ReplaceRepeated[#, List -> Times] & /@ nvpertpow;
+  ntpertpow = ReplaceRepeated[#, List -> Times] & /@ ntpertpow;
+  orderpert = nspert*nspertpow + ntpert*ntpertpow + nvpert*nvpertpow;
+  order = Boole[# == n] & /@ (orderTder + orderSder + orderpert);
+  tmp = tmp*order //. List -> Plus;
+  tmp]
+
+
+
+  NOrderAh[n_][expr_] := 
+ Module[{tmp, orderTder, orderSder, countPDs, orderPDPow, orderpert, 
+   nspert, nvpert, ntpert, getsPowers, getvPowers, gettPowers, 
+   nspertpow, nvpertpow, ntpertpow, totalorder, order, modifiedExpr},
+  tmp = expr // Expand;
+  tmp = Replace[tmp, Plus -> List, {1}, Heads -> True];
+  If[ToString[Head[tmp]] != "List", tmp = {tmp}];
+  orderTder = -Length[IndicesOf[PD, TangentM1][#]]/2 & /@ tmp;
+  orderSder = -Length[IndicesOf[PD, TangentM3][#]]/2 & /@ tmp;
+  countPDs = 
+   Function[term, 
+    Total[Cases[term, 
+      PD[_][__]^pow_ :> 
+       pow*-Length[Cases[term, PD[_][__], {0, Infinity}]]/2, {0, 
+       Infinity}]]];
+  modifiedExpr = tmp //. Times -> List;
+  processList[list_] := 
+   list /. {sublist_List :> 
+      Total[countPDs /@ 
+        sublist],(*Apply countPDs to each term in the sublist and sum \
+the results*)
+     item_ :> 
+      countPDs[
+       item]      (*Apply countPDs directly to the item if it's not a \
+sublist*)};
+  orderPDPow = processList /@ modifiedExpr;
+  Print[orderPDPow];
+  getsPowers = 
+   Function[expre, Module[{explicit, implicit, terms, strippedTerms},
+     (*Strip off any derivatives*)
+     strippedTerms = expre //. PD[_][x_] :> x;
+     (*Flatten the expression to get all subterms*)
+     terms = 
+      If[Head[expre] === Times || Head[expre] === Plus, 
+       List @@ strippedTerms, {strippedTerms}];
+     (*Extract explicit powers*)
+     explicit = Cases[terms, Power[head_[LI[_]], pow_] :> pow];
+     (*Extract heads with explicit powers to avoid counting them as \
+implicit*)
+     implicit = 
+      Cases[terms, 
+       head_[LI[_]] /; FreeQ[terms, Power[head, _]] :> 1];
+     (*Combine results,ensuring we only take the power part*)
+     Join[explicit, implicit]]];
+  nspertpow = getsPowers /@ tmp;
+  getvPowers = 
+   Function[expre, Module[{explicit, implicit, terms, strippedTerms},
+     (*Strip off any derivatives*)
+     strippedTerms = expre //. PD[_][x_] :> x;
+     (*Flatten the expression to get all subterms*)
+     terms = 
+      If[Head[expre] === Times || Head[expre] === Plus, 
+       List @@ strippedTerms, {strippedTerms}];
+     (*Extract explicit powers*)
+     explicit = Cases[terms, Power[head_[LI[_], _], pow_] :> pow];
+     (*Extract heads with explicit powers to avoid counting them as \
+implicit*)
+     implicit = 
+      Cases[terms, 
+       head_[LI[_], _] /; FreeQ[terms, Power[head, _]] :> 1];
+     (*Combine results,ensuring we only take the power part*)
+     Join[explicit, implicit]]];
+  nvpertpow = getvPowers /@ tmp;
+  gettPowers = 
+   Function[expre, Module[{explicit, implicit, terms, strippedTerms},
+     (*Strip off any derivatives*)
+     strippedTerms = expre //. PD[_][x_] :> x;
+     (*Flatten the expression to get all subterms*)
+     terms = 
+      If[Head[expre] === Times || Head[expre] === Plus, 
+       List @@ strippedTerms, {strippedTerms}];
+     (*Extract explicit powers*)
+     explicit = Cases[terms, Power[head_[LI[_], _, _], pow_] :> pow];
+     (*Extract heads with explicit powers to avoid counting them as \
+implicit*)
+     implicit = 
+      Cases[terms, 
+       head_[LI[_], _, _] /; FreeQ[terms, Power[head, _]] :> 1];
+     (*Combine results,ensuring we only take the power part*)
+     Join[explicit, implicit]]];
+  ntpertpow = gettPowers /@ tmp;
+  nspertpow = ReplaceRepeated[#, List -> Plus] & /@ nspertpow;
+  nvpertpow = ReplaceRepeated[#, List -> Plus] & /@ nvpertpow;
+  ntpertpow = ReplaceRepeated[#, List -> Plus] & /@ ntpertpow;
+  orderpert = nspertpow + ntpertpow + nvpertpow;
+  totalorder = orderTder + orderSder + orderPDPow + orderpert;
+  (*Set totalorder to zero if it is negative*)
+  (*totalorder=If[#<0,0,#]&/@totalorder;*)
+  order = Boole[# == n] & /@ totalorder ;
+  tmp = tmp*order //. List -> Plus;
+  tmp]
+
+
+
+NOrderAh[n_][expr_] := 
+ Module[{tmp, orderTder, orderSder, countPDs, orderPDPow, orderpert, 
+   nspert, nvpert, ntpert, getsPowers, getvPowers, gettPowers, 
+   nspertpow, nvpertpow, ntpertpow, totalorder, order, modifiedExpr},
+  tmp = expr // Expand;
+  tmp = Replace[tmp, Plus -> List, {1}, Heads -> True];
+  If[ToString[Head[tmp]] != "List", tmp = {tmp}];
+  orderTder = -Length[IndicesOf[PD, TangentM1][#]]/2 & /@ tmp;
+  orderSder = -Length[IndicesOf[PD, TangentM3][#]]/2 & /@ tmp;
+  countPDs = 
+   Function[term, 
+    Total[Cases[term, 
+      PD[_][__]^pow_ :> 
+       pow*-Length[Cases[term, PD[_][__], {0, Infinity}]]/2, {0, 
+       Infinity}]]];
+  modifiedExpr = tmp //. Times -> List;
+  processList[list_] := 
+   list /. {sublist_List :> 
+      Total[countPDs /@ 
+        sublist],(*Apply countPDs to each term in the sublist and sum \
+the results*)
+     item_ :> 
+      countPDs[
+       item]      (*Apply countPDs directly to the item if it's not a \
+sublist*)};
+  orderPDPow = processList /@ modifiedExpr;
+  Print[orderPDPow];
+  getsPowers = 
+   Function[expre, Module[{explicit, implicit, terms, strippedTerms},
+     (*Strip off any derivatives*)
+     strippedTerms = expre //. PD[_][x_] :> x;
+     (*Flatten the expression to get all subterms*)
+     terms = 
+      If[Head[expre] === Times || Head[expre] === Plus, 
+       List @@ strippedTerms, {strippedTerms}];
+     (*Extract explicit powers*)
+     explicit = Cases[terms, Power[head_[LI[_]], pow_] :> pow];
+     (*Extract heads with explicit powers to avoid counting them as \
+implicit*)
+     implicit = 
+      Cases[terms, 
+       head_[LI[_]] /; FreeQ[terms, Power[head, _]] :> 1];
+     (*Combine results,ensuring we only take the power part*)
+     Join[explicit, implicit]]];
+  nspertpow = getsPowers /@ tmp;
+  getvPowers = 
+   Function[expre, Module[{explicit, implicit, terms, strippedTerms},
+     (*Strip off any derivatives*)
+     strippedTerms = expre //. PD[_][x_] :> x;
+     (*Flatten the expression to get all subterms*)
+     terms = 
+      If[Head[expre] === Times || Head[expre] === Plus, 
+       List @@ strippedTerms, {strippedTerms}];
+     (*Extract explicit powers*)
+     explicit = Cases[terms, Power[head_[LI[_], _], pow_] :> pow];
+     (*Extract heads with explicit powers to avoid counting them as \
+implicit*)
+     implicit = 
+      Cases[terms, 
+       head_[LI[_], _] /; FreeQ[terms, Power[head, _]] :> 1];
+     (*Combine results,ensuring we only take the power part*)
+     Join[explicit, implicit]]];
+  nvpertpow = getvPowers /@ tmp;
+  gettPowers = 
+   Function[expre, Module[{explicit, implicit, terms, strippedTerms},
+     (*Strip off any derivatives*)
+     strippedTerms = expre //. PD[_][x_] :> x;
+     (*Flatten the expression to get all subterms*)
+     terms = 
+      If[Head[expre] === Times || Head[expre] === Plus, 
+       List @@ strippedTerms, {strippedTerms}];
+     (*Extract explicit powers*)
+     explicit = Cases[terms, Power[head_[LI[_], _, _], pow_] :> pow];
+     (*Extract heads with explicit powers to avoid counting them as \
+implicit*)
+     implicit = 
+      Cases[terms, 
+       head_[LI[_], _, _] /; FreeQ[terms, Power[head, _]] :> 1];
+     (*Combine results,ensuring we only take the power part*)
+     Join[explicit, implicit]]];
+  ntpertpow = gettPowers /@ tmp;
+  nspertpow = ReplaceRepeated[#, List -> Plus] & /@ nspertpow;
+  nvpertpow = ReplaceRepeated[#, List -> Plus] & /@ nvpertpow;
+  ntpertpow = ReplaceRepeated[#, List -> Plus] & /@ ntpertpow;
+  orderpert = nspertpow + ntpertpow + nvpertpow;
+  totalorder = orderTder + orderSder + orderPDPow + orderpert;
+  (*Set totalorder to zero if it is negative*)
+  (*totalorder=If[#<0,0,#]&/@totalorder;*)
+  order = Boole[# == n] & /@ totalorder ;
+  tmp = tmp*order //. List -> Plus;
+  tmp]
+
+EQfirst11 = 
+  6*hubbleC[]^4*pertP[LI[1]] + alphaK[]*hubbleC[]^4*pertP[LI[1]] - 
+   6*hubbleC[]^3*pertpsi[LI[1]] - 
+   alphaK[]*hubbleC[]^3*pertpsi[LI[1]] - 
+   3*alphaB[]*hubbleC[]*pertP[LI[1]]*pprimehubbleC[] + 
+   3*hubbleC[]^3*pertP[LI[1]]*primealphaB[] - 
+   3*hubbleC[]^2*pertpsi[LI[1]]*primealphaB[] + 
+   hubbleC[]^3*pertP[LI[1]]*primealphaK[] - 
+   hubbleC[]^2*pertpsi[LI[1]]*primealphaK[] - 
+   12*hubbleC[]^2*pertP[LI[1]]*primehubbleC[] + 
+   9*alphaB[]*hubbleC[]^2*pertP[LI[1]]*primehubbleC[] + 
+   3*alphaK[]*hubbleC[]^2*pertP[LI[1]]*primehubbleC[] + 
+   6*hubbleC[]*pertpsi[LI[1]]*primehubbleC[] - 
+   9*alphaB[]*hubbleC[]*pertpsi[LI[1]]*primehubbleC[] - 
+   2*alphaK[]*hubbleC[]*pertpsi[LI[1]]*primehubbleC[] - 
+   3*hubbleC[]*pertP[LI[1]]*primealphaB[]*primehubbleC[] + 
+   6*pertP[LI[1]]*primehubbleC[]^2 - 
+   3*alphaB[]*pertP[LI[1]]*
+    primehubbleC[]^2 - (3*density[]*hubbleC[]^2*pertP[LI[1]]*
+      scale[]^2)/
+    Mpl^2 + (3*density[]*hubbleC[]*pertpsi[LI[1]]*scale[]^2)/
+    Mpl^2 - (3*hubbleC[]^2*pertP[LI[1]]*pressure[]*scale[]^2)/
+    Mpl^2 + (3*hubbleC[]*pertpsi[LI[1]]*pressure[]*scale[]^2)/
+    Mpl^2 + (3*density[]*pertP[LI[1]]*primehubbleC[]*scale[]^2)/
+    Mpl^2 + (3*pertP[LI[1]]*pressure[]*primehubbleC[]*scale[]^2)/
+    Mpl^2 + 2*alphaK[]*hubbleC[]^3*timevec[h$2806951]*
+    PD[-h$2806951][pertP[LI[1]]] + 
+   hubbleC[]^2*primealphaK[]*timevec[h$2806951]*
+    PD[-h$2806951][pertP[LI[1]]] + 
+   2*alphaK[]*hubbleC[]*primehubbleC[]*timevec[h$2806951]*
+    PD[-h$2806951][pertP[LI[1]]] - 
+   6*hubbleC[]^2*timevec[h$2806951]*PD[-h$2806951][pertphi[LI[1]]] - 
+   3*alphaB[]*hubbleC[]^2*timevec[h$2806951]*
+    PD[-h$2806951][pertphi[LI[1]]] - 
+   3*hubbleC[]*primealphaB[]*timevec[h$2806951]*
+    PD[-h$2806951][pertphi[LI[1]]] + 
+   6*primehubbleC[]*timevec[h$2806951]*
+    PD[-h$2806951][pertphi[LI[1]]] - 
+   3*alphaB[]*primehubbleC[]*timevec[h$2806951]*
+    PD[-h$2806951][
+     pertphi[LI[1]]] + (3*density[]*scale[]^2*timevec[h$2806951]*
+      PD[-h$2806951][pertphi[LI[1]]])/
+    Mpl^2 + (3*pressure[]*scale[]^2*timevec[h$2806951]*
+      PD[-h$2806951][pertphi[LI[1]]])/Mpl^2 - 
+   3*alphaB[]*hubbleC[]^2*timevec[h$2806951]*
+    PD[-h$2806951][pertpsi[LI[1]]] - 
+   alphaK[]*hubbleC[]^2*timevec[h$2806951]*
+    PD[-h$2806951][pertpsi[LI[1]]] + 
+   alphaK[]*hubbleC[]^2*timevec[h$2806951]*timevec[h$2806952]*
+    PD[-h$2806952][PD[-h$2806951][pertP[LI[1]]]] - 
+   3*alphaB[]*hubbleC[]*timevec[h$2806951]*timevec[h$2806952]*
+    PD[-h$2806952][PD[-h$2806951][pertphi[LI[1]]]] - 
+   2*hubbleC[]^2*metric\[Delta][p$2806953, p$2806954]*
+    PD[-p$2806954][PD[-p$2806953][pertS[LI[1]]]] - 
+   alphaB[]*hubbleC[]^2*metric\[Delta][p$2806953, p$2806954]*
+    PD[-p$2806954][PD[-p$2806953][pertS[LI[1]]]] - 
+   hubbleC[]*metric\[Delta][p$2806953, p$2806954]*primealphaB[]*
+    PD[-p$2806954][PD[-p$2806953][pertS[LI[1]]]] + 
+   2*metric\[Delta][p$2806953, p$2806954]*primehubbleC[]*
+    PD[-p$2806954][PD[-p$2806953][pertS[LI[1]]]] - 
+   alphaB[]*metric\[Delta][p$2806953, p$2806954]*primehubbleC[]*
+    PD[-p$2806954][
+     PD[-p$2806953][pertS[LI[1]]]] + (density[]*
+      metric\[Delta][p$2806953, p$2806954]*scale[]^2*
+      PD[-p$2806954][PD[-p$2806953][pertS[LI[1]]]])/
+    Mpl^2 + (metric\[Delta][p$2806953, p$2806954]*pressure[]*
+      scale[]^2*PD[-p$2806954][PD[-p$2806953][pertS[LI[1]]]])/Mpl^2 - 
+   2*hubbleC[]^2*metric\[Delta][p$2806953, p$2806954]*
+    PD[-p$2806954][PD[-p$2806953][pertP[LI[1]]]] - 
+   hubbleC[]*metric\[Delta][p$2806953, p$2806954]*primealphaB[]*
+    PD[-p$2806954][PD[-p$2806953][pertP[LI[1]]]] + 
+   2*metric\[Delta][p$2806953, p$2806954]*primehubbleC[]*
+    PD[-p$2806954][PD[-p$2806953][pertP[LI[1]]]] - 
+   alphaB[]*metric\[Delta][p$2806953, p$2806954]*primehubbleC[]*
+    PD[-p$2806954][
+     PD[-p$2806953][pertP[LI[1]]]] + (density[]*
+      metric\[Delta][p$2806953, p$2806954]*scale[]^2*
+      PD[-p$2806954][PD[-p$2806953][pertP[LI[1]]]])/
+    Mpl^2 + (metric\[Delta][p$2806953, p$2806954]*pressure[]*
+      scale[]^2*PD[-p$2806954][PD[-p$2806953][pertP[LI[1]]]])/Mpl^2 - 
+   alphaB[]*hubbleC[]*metric\[Delta][p$2806953, p$2806954]*
+    PD[-p$2806954][PD[-p$2806953][pertpsi[LI[1]]]] - 
+   alphaB[]*hubbleC[]*metric\[Delta][p$2806953, p$2806954]*
+    timevec[h$2806951]*
+    PD[-p$2806954][PD[-p$2806953][PD[-h$2806951][pertS[LI[1]]]]] + 
+   2*hubbleC[]^2*metric\[Delta][p$2806953, p$2806954]*
+    timevec[h$2806951]*
+    PD[-p$2806954][PD[-p$2806953][PD[-h$2806951][pertE[LI[1]]]]] + 
+   alphaB[]*hubbleC[]^2*metric\[Delta][p$2806953, p$2806954]*
+    timevec[h$2806951]*
+    PD[-p$2806954][PD[-p$2806953][PD[-h$2806951][pertE[LI[1]]]]] + 
+   hubbleC[]*metric\[Delta][p$2806953, p$2806954]*primealphaB[]*
+    timevec[h$2806951]*
+    PD[-p$2806954][PD[-p$2806953][PD[-h$2806951][pertE[LI[1]]]]] - 
+   2*metric\[Delta][p$2806953, p$2806954]*primehubbleC[]*
+    timevec[h$2806951]*
+    PD[-p$2806954][PD[-p$2806953][PD[-h$2806951][pertE[LI[1]]]]] + 
+   alphaB[]*metric\[Delta][p$2806953, p$2806954]*primehubbleC[]*
+    timevec[h$2806951]*
+    PD[-p$2806954][
+     PD[-p$2806953][PD[-h$2806951][pertE[LI[1]]]]] - (density[]*
+      metric\[Delta][p$2806953, p$2806954]*scale[]^2*
+      timevec[h$2806951]*
+      PD[-p$2806954][PD[-p$2806953][PD[-h$2806951][pertE[LI[1]]]]])/
+    Mpl^2 - (metric\[Delta][p$2806953, p$2806954]*pressure[]*
+      scale[]^2*timevec[h$2806951]*
+      PD[-p$2806954][PD[-p$2806953][PD[-h$2806951][pertE[LI[1]]]]])/
+    Mpl^2 + alphaB[]*hubbleC[]*metric\[Delta][p$2806953, p$2806954]*
+    timevec[h$2806951]*timevec[h$2806952]*
+    PD[-p$2806954][
+     PD[-p$2806953][PD[-h$2806952][PD[-h$2806951][pertE[LI[1]]]]]];
+EQfirst11 //. alpharules
+
+
+alpharules = {mass2[] :> Mpl^2, alphaB[] :> 0, primealphaB[] :> 0, 
+  alphaM[] :> 0, primealphaM[] :> 0, alphaT[] :> 0, 
+  primealphaT[] :> 0, alphaH[] :> 0, primealphaH[] :> 0, 
+  pprimealphaH[] :> 0, alphaDEG[] :> 0, primealphaDEG[] :> 0, 
+  alphaHH[] :> 0, primealphaHH[] :> 0, pprimealphaHH[] :> 0, 
+  alphaTT[] :> 0, primealphaTT[] :> 0, alphaMM[] :> 0, 
+  primealphaMM[] :> 0, alphaBB[] :> 0, primealphaBB[] :> 0}
