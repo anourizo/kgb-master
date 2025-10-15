@@ -315,7 +315,7 @@ struct cosmology
 	int num_ncdm;
 
 	// KGB part
-	int gravity_model;                  // 0 is the propto_omega, 1 is propto_scale
+	int gravity_model;                  // 0 is the propto_omega, 1 is propto_scale, 2 is constant_alphas
 	int expansion_model;                // 0 is wowa
 	double bg_i[2];
 	double Omega_kgb;

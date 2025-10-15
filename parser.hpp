@@ -1736,6 +1736,11 @@ parallel.abortForce();
        COUT << " modified gravity model set to: " << COLORTEXT_CYAN << "propto_scale" << COLORTEXT_RESET << endl;
        cosmo.gravity_model = 1; // One needs to provide parameters_smg and expansion_smg
      }
+	  else if (std::strlen(par_string) > 0 && par_string[0] == 'c' )
+     {
+       COUT << " modified gravity model set to: " << COLORTEXT_CYAN << "constant_alphas" << COLORTEXT_RESET << endl;
+       cosmo.gravity_model = 2; // One needs to provide parameters_smg and expansion_smg
+     }
 	  else
      {
         if (parallel.isRoot())

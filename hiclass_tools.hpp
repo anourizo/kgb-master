@@ -234,6 +234,20 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
     sprintf(class_filecontent.name[i], "parameters_smg");
     sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e", cosmo.x_k, cosmo.x_b, cosmo.x_m, cosmo.x_t, cosmo.M_star_ini);
   }
+  else if (cosmo.gravity_model==2)
+  {
+    sprintf(class_filecontent.name[i], "gravity_model");
+    sprintf(class_filecontent.value[i++], "constant_alphas");
+
+    sprintf(class_filecontent.name[i], "expansion_model");
+    sprintf(class_filecontent.value[i++], "wowa");
+
+    sprintf(class_filecontent.name[i], "expansion_smg");
+    sprintf(class_filecontent.value[i++],"%e, %e, %e",cosmo.Omega_kgb, cosmo.w_kgb, cosmo.w_a_kgb);
+
+    sprintf(class_filecontent.name[i], "parameters_smg");
+    sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e", cosmo.x_k, cosmo.x_b, cosmo.x_m, cosmo.x_t, cosmo.M_star_ini);
+  }
   else if (cosmo.gravity_model==3)
   {
     sprintf(class_filecontent.name[i], "gravity_model");
