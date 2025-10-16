@@ -60,7 +60,7 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	int i;
   int num_entries;
   #ifdef HAVE_HICLASS_BG
-  if (cosmo.gravity_model==0 || cosmo.gravity_model==1)
+  if (cosmo.gravity_model==0 || cosmo.gravity_model==1 || cosmo.gravity_model==2)
     num_entries = 30; // If we have gravity_model=propto_omega we have to read 30 class params
   else if (cosmo.gravity_model==3)
   {

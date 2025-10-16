@@ -1754,7 +1754,7 @@ parallel.abortForce();
        parallel.abortForce();
      }
 	 // kgb
-    if (cosmo.gravity_model == 0 || cosmo.gravity_model == 1 )
+    if (cosmo.gravity_model == 0 || cosmo.gravity_model == 1 || cosmo.gravity_model == 2)
     {
 	int num_alpha_params = 5;
 	if (parseParameter(params, numparam, "parameters_smg", cosmo.x_i, num_alpha_params))
@@ -2080,7 +2080,7 @@ parallel.abortForce();
 	{
 	// KGB part added  closed relation for Omega_kgb
     #ifdef HAVE_HICLASS_BG
-    if (cosmo.gravity_model == 0 || cosmo.gravity_model == 1)
+    if (cosmo.gravity_model == 0 || cosmo.gravity_model == 1 || cosmo.gravity_model == 2)
     {
       cosmo.Omega_kgb  = 1. - cosmo.Omega_m - cosmo.Omega_Lambda - cosmo.Omega_rad;
 	  COUT<<"The expansion parameters are: "<<"\033[36;1m Omega_kgb0 (set from closed relation)= \033[0m" << cosmo.Omega_kgb <<"\033[36;1m, w_kgb= \033[0m" << cosmo.w_kgb <<"\033[36;1m, w_a_kgb= \033[0m" << cosmo.w_a_kgb <<endl;
@@ -2099,7 +2099,7 @@ parallel.abortForce();
     COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": You have requested mixed dark energy scenario which is not tested well! Before using this implementaion you need to perfomr some tests!" << endl;
   }
     #ifdef HAVE_HICLASS_BG
-  if (cosmo.gravity_model == 0 || cosmo.gravity_model == 1)
+  if (cosmo.gravity_model == 0 || cosmo.gravity_model == 1 || cosmo.gravity_model == 2)
   {
     COUT << "kgb source gravity = " << sim.kgb_source_gravity<< ", Non-linear kgb = " << sim.NL_kgb<< ", Number of kgb update = " <<sim.n_kgb_numsteps <<endl;
     COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
